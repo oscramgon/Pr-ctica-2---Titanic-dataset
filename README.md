@@ -1,1 +1,1 @@
-# Pr-ctica-2---Titanic-dataset
+# Practica-2---Titanic-dataset
