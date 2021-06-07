@@ -410,7 +410,175 @@ También podemos extraer la planta en la que se hospeda cada pasajero sabiendo e
 full$Deck <- as.factor(substr(full$Cabin, 0, 1))
 ```
 
+oscainicio
 # Análisis estadístico
+
+En este apartado vamos a relizar un análisis estadístico de los datos numéricos
+del dataset del Titanic.
+
+## Análisis de la normalidad
+
+En primer lugar vamos a realizar un histograma de las variables númericas para 
+intentar dilucidar de manera gráfica si tenemos alguna variable con una 
+distribución normal.
+```{r message=FALSE, warning=FALSE}
+print("COMIENZO DEL ANALISIS DE LA NORMALIDAD")
+dim(full)
+hist(full$Age)
+hist(full$Fare)
+hist(train$Survived)
+hist(train$Pclass)
+hist(full$FamilyS)
+
+```
+
+De las gráficas obtenidas, se puede observar que solamente la variable Age  
+podría tener una distribución cercana a la normal, pero hace falta verificarlo.
+
+Vamos a verificar que es así (o no) mediante la prueba de normalidad de 
+Anderson-Darling.
+
+Lo que hacemos es verificar que para cada variable se obtiene un valor mayor
+al nivel de significación elegido, en esta caso alfa = 0.02. Si esto ocurre, 
+tenemos que la variable sigue una distribución normal.
+
+
+```{r message=FALSE, warning=FALSE}
+
+library(nortest)
+alpha = 0.05
+col.names = colnames(full)
+for (i in 1:ncol(full)) {
+  if (i == 1) cat("Variables que no siguen una distribución normal:\n\n")
+  if (is.integer(full[,i]) | is.numeric(full[,i])) {
+    p_val = ad.test(full[,i])$p.value
+    if (p_val < alpha) {
+      cat("La variable",col.names[i], "no tiene una distribución normal", "\n")
+    }
+    else {
+      print("lucas")
+    }
+  }
+}
+
+```
+
+No tenemos ninguna de las variables de nuestro dataset que siga una distribución 
+normal, de acuerdo con el criterio de Anderson-Darling. 
+
+Para hacer una segunda comprobación, vamos a utiliar el test de Shapiro-Wilk para
+la edad:
+
+```{r message=FALSE, warning=FALSE}
+print(shapiro.test(full$Age))
+
+```
+De nuevo vemos que el p-values es mucho más pequeño que el valor mínimo para
+considerar que tenemos una variable con una distribución normal.
+
+
+## Análisis de la homogeneidad de la varianza (homocedasticidad)
+
+Con el suspuesto de homogeneidad de la varianza se persigue comprobar si dos
+variables distintas de un mismo conjunto de datos tienen una varianza constante.
+
+Como recordatorio ponemos debajo que es la varianza y los elementos con los que 
+se calcula.
+
+![Varianza](./Varianza.jpg "Varianza")
+
+![Valores para el cálculo de la varianza](./ElementosVarianza.jpg "Elementos Varianza")
+Con las distribuciones que tenemos en cada una de las variables va a ser muy 
+complicado, por no decir imposible, encontrar dos de estas variables con las 
+que se pueda hacer un análisis de la homogeneidad de la varianza. Al final 
+lo que queremos comprobar es que la varizanza de las dos variables elegidas
+
+Se podrían utilizar los siguientes tests:
+
+- F-test (razón de varianzas): se recomienda para dos variables con una
+clara distribución normal. No tenemos el escenario más adecuado para aplicar
+este test.
+
+- Test de Levene. Este método permite comparar dos o más variables sin que 
+necesariamente tengan una distribución normal. Vamos a comparar las variables
+Edad y Fare.
+
+
+- Test de Bartlett: permite contrastar la igualdad de varizand en 2 o más 
+poblaciones sin necesidad de que el tamañon de los grupos sea el mismo. Es
+la mejor opción si se esta seguro de que los datos provienen de una
+distribución normal.
+
+- Test de Brown-Forsyth: es equivalente al test de Levene cuando se emplea
+la mediana como medida de centralidad.
+
+- Test de Fligner-Killeen: es un test no paramétrico que compara las varianzas
+basándose en la mediana. Es tambien una alternativa cuando no se cumple la
+condición de normalidad en las muestras.
+
+Con las premisas indicadas anteriormente, vamos a usar el test de 
+Fligner-Killeen para la combinación de varias parejas de variables..
+
+```{r message=FALSE, warning=FALSE}
+
+
+a <- full[full$Sex == "female","Age"]
+b <- full[full$Sex == "male","Age"]
+
+fligner.test(x = list(a,b))
+
+
+a <- full[full$Survived == "Didn't survived","Age"]
+b <- full[full$Survived == "Survived","Age"]
+
+fligner.test(x = list(a,b))
+
+
+a <- full[full$Pclass == "1","Age"]
+b <- full[full$Pclass == "2","Age"]
+b <- full[full$Pclass == "3","Age"]
+
+fligner.test(x = list(a,b))
+
+```
+Como se puede ver en los resultados obtenidos, solamente en el caso de la
+relación entre sexo y edad tenemos un p-value que se acerca a 0.05, que se
+considera el límite para considerar que tenemos homocedasticidad en las
+dos variables analizadas. En ninguna de las tres relaciones estudiadas tenemos
+homocedasticidad. Podemos decir que las variables cumplen el criterio de 
+heterocedasticidad.
+
+
+## Pruebas estadísticas
+En primer lugar estudiamos la correlación entre las variables numéricas
+presentes en el dataset.
+
+```{r message=FALSE, warning=FALSE}
+
+full$Pclass = as.numeric(as.character(full$Pclass))
+
+print(full)
+
+num<-full[,c(3,6,7,8,10)]
+
+colnames(num)<-c("Clase_Pasajero","Edad","Pariente_Masculino","Pariente_Femenino","Tarifa_Pasaje")
+covar<-round(var(num),3)
+print("covar")
+covar
+
+corr<-round(cor(num),2)
+print("correlc")
+corr
+
+```
+Podemos ver como en al caso de la correlación, a mayor edad la clase del pasajero 
+tambien es más alta, considerando una clase más alta un valor más bajo de dicho
+parametro (1 es primer clase), por lo que la correlación nos sale negativa.
+
+Lo mismo ocurre con la tarifa del pasaje y la clase del pasaje: a mayor clase
+(menor número) tenemos una tarifa mayor.
+
+oscarfinal
 
 # Visualizaciones
 
